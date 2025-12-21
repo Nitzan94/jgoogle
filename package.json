@@ -1,0 +1,42 @@
+{
+  "name": "jgoogle",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Google CLI (Gmail, Calendar, Drive) - ready to use with embedded credentials",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "jgoogle": "./bin/jgoogle.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "prepublishOnly": "npm run build"
+  },
+  "files": [
+    "dist",
+    "bin",
+    "README.md"
+  ],
+  "keywords": [
+    "google",
+    "gmail",
+    "calendar",
+    "drive",
+    "cli",
+    "oauth"
+  ],
+  "author": "Nitzan Bar-Ness",
+  "license": "MIT",
+  "dependencies": {
+    "google-auth-library": "^9.15.1",
+    "googleapis": "^144.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}
