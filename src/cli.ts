@@ -8,6 +8,7 @@ import { OAuthFlow } from "./oauth-flow.js";
 import { GmailService } from "./services/gmail.js";
 import { CalendarService } from "./services/calendar.js";
 import { DriveService } from "./services/drive.js";
+import { ExitCode, exitWithCode } from "./utils/errors.js";
 
 const accountStorage = new AccountStorage();
 const gmailService = new GmailService(accountStorage);
@@ -117,12 +118,10 @@ async function handleAccounts(args: string[]): Promise<void> {
     const email = args[1];
     const manual = args.includes("--manual");
     if (!email) {
-      console.error("Error: Missing email address");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing email address");
     }
     if (accountStorage.hasAccount(email)) {
-      console.error(`Error: Account '${email}' already exists`);
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, `Account '${email}' already exists`);
     }
     const creds = accountStorage.getCredentials();
     const oauthFlow = new OAuthFlow(creds.clientId, creds.clientSecret);
@@ -138,20 +137,17 @@ async function handleAccounts(args: string[]): Promise<void> {
   if (action === "remove") {
     const email = args[1];
     if (!email) {
-      console.error("Error: Missing email address");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing email address");
     }
     if (accountStorage.deleteAccount(email)) {
       console.log(`Account '${email}' removed`);
     } else {
-      console.error(`Error: Account '${email}' not found`);
-      process.exit(1);
+      exitWithCode(ExitCode.NOT_FOUND, `Account '${email}' not found`);
     }
     return;
   }
 
-  console.error(`Error: Unknown accounts action: ${action}`);
-  process.exit(1);
+  exitWithCode(ExitCode.INVALID_INPUT, `Unknown accounts action: ${action}`);
 }
 
 async function handleMail(email: string, args: string[]): Promise<void> {
@@ -160,8 +156,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
   if (command === "search") {
     const query = args[1];
     if (!query) {
-      console.error("Error: Missing search query");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing search query");
     }
     const { values } = parseArgs({
       args: args.slice(2),
@@ -187,8 +182,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
   if (command === "thread") {
     const threadId = args[1];
     if (!threadId) {
-      console.error("Error: Missing thread ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing thread ID");
     }
     const thread = await gmailService.getThread(email, threadId);
     console.log(`Thread: ${thread.id}\n`);
@@ -223,8 +217,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
       allowPositionals: true,
     });
     if (positionals.length === 0) {
-      console.error("Error: Missing thread IDs");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing thread IDs");
     }
     const addLabels = values.add?.split(",") || [];
     const removeLabels = values.remove?.split(",") || [];
@@ -246,8 +239,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
     if (subCmd === "delete") {
       const draftId = args[2];
       if (!draftId) {
-        console.error("Error: Missing draft ID");
-        process.exit(1);
+        exitWithCode(ExitCode.INVALID_INPUT, "Missing draft ID");
       }
       await gmailService.deleteDraft(email, draftId);
       console.log("Draft deleted");
@@ -256,15 +248,13 @@ async function handleMail(email: string, args: string[]): Promise<void> {
     if (subCmd === "send") {
       const draftId = args[2];
       if (!draftId) {
-        console.error("Error: Missing draft ID");
-        process.exit(1);
+        exitWithCode(ExitCode.INVALID_INPUT, "Missing draft ID");
       }
       const messageId = await gmailService.sendDraft(email, draftId);
       console.log(`Sent: ${messageId}`);
       return;
     }
-    console.error(`Error: Unknown drafts command: ${subCmd}`);
-    process.exit(1);
+    exitWithCode(ExitCode.INVALID_INPUT, `Unknown drafts command: ${subCmd}`);
   }
 
   if (command === "send") {
@@ -282,8 +272,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
       allowPositionals: true,
     });
     if (!values.to || !values.subject || !values.body) {
-      console.error("Error: --to, --subject, and --body are required");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "--to, --subject, and --body are required");
     }
     const messageId = await gmailService.sendMessage(
       email,
@@ -304,8 +293,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
   if (command === "url") {
     const threadIds = args.slice(1);
     if (threadIds.length === 0) {
-      console.error("Error: Missing thread IDs");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing thread IDs");
     }
     for (const id of threadIds) {
       console.log(gmailService.getThreadUrl(email, id));
@@ -313,8 +301,7 @@ async function handleMail(email: string, args: string[]): Promise<void> {
     return;
   }
 
-  console.error(`Error: Unknown mail command: ${command}`);
-  process.exit(1);
+  exitWithCode(ExitCode.INVALID_INPUT, `Unknown mail command: ${command}`);
 }
 
 async function handleCal(email: string, args: string[]): Promise<void> {
@@ -373,8 +360,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
     const calendarId = args[1];
     const eventId = args[2];
     if (!calendarId || !eventId) {
-      console.error("Error: Missing calendar ID or event ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing calendar ID or event ID");
     }
     const event = await calendarService.getEvent(email, calendarId, eventId);
     console.log(`ID: ${event.id}`);
@@ -393,8 +379,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
   if (command === "create") {
     const calendarId = args[1];
     if (!calendarId) {
-      console.error("Error: Missing calendar ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing calendar ID");
     }
     const { values } = parseArgs({
       args: args.slice(2),
@@ -410,8 +395,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
       allowPositionals: true,
     });
     if (!values.title || !values.start || !values.end) {
-      console.error("Error: --title, --start, and --end are required");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "--title, --start, and --end are required");
     }
     const event = await calendarService.createEvent(email, calendarId, {
       summary: values.title,
@@ -431,8 +415,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
     const calendarId = args[1];
     const eventId = args[2];
     if (!calendarId || !eventId) {
-      console.error("Error: Missing calendar ID or event ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing calendar ID or event ID");
     }
     const { values } = parseArgs({
       args: args.slice(3),
@@ -464,8 +447,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
     const calendarId = args[1];
     const eventId = args[2];
     if (!calendarId || !eventId) {
-      console.error("Error: Missing calendar ID or event ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing calendar ID or event ID");
     }
     await calendarService.deleteEvent(email, calendarId, eventId);
     console.log("Event deleted");
@@ -479,8 +461,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
       allowPositionals: true,
     });
     if (!values.start || !values.end || positionals.length === 0) {
-      console.error("Error: Calendar IDs and --start, --end are required");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Calendar IDs and --start, --end are required");
     }
     const result = await calendarService.getFreeBusy(email, positionals, values.start, values.end);
     for (const [calId, busy] of result) {
@@ -496,8 +477,7 @@ async function handleCal(email: string, args: string[]): Promise<void> {
     return;
   }
 
-  console.error(`Error: Unknown cal command: ${command}`);
-  process.exit(1);
+  exitWithCode(ExitCode.INVALID_INPUT, `Unknown cal command: ${command}`);
 }
 
 async function handleDrive(email: string, args: string[]): Promise<void> {
@@ -534,8 +514,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "search") {
     const query = args[1];
     if (!query) {
-      console.error("Error: Missing search query");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing search query");
     }
     const { values } = parseArgs({
       args: args.slice(2),
@@ -562,8 +541,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "get") {
     const fileId = args[1];
     if (!fileId) {
-      console.error("Error: Missing file ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
     }
     const file = await driveService.getFile(email, fileId);
     console.log(`ID: ${file.id}`);
@@ -580,15 +558,13 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
     const fileId = args[1];
     const destPath = args[2];
     if (!fileId) {
-      console.error("Error: Missing file ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
     }
     const result = await driveService.download(email, fileId, destPath);
     if (result.success) {
       console.log(`Downloaded: ${result.path} (${formatSize(result.size || 0)})`);
     } else {
-      console.error(`Error: ${result.error}`);
-      process.exit(1);
+      exitWithCode(ExitCode.API_ERROR, result.error);
     }
     return;
   }
@@ -596,8 +572,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "upload") {
     const localPath = args[1];
     if (!localPath) {
-      console.error("Error: Missing local file path");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing local file path");
     }
     const { values } = parseArgs({
       args: args.slice(2),
@@ -617,8 +592,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "mkdir") {
     const name = args[1];
     if (!name) {
-      console.error("Error: Missing folder name");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing folder name");
     }
     const { values } = parseArgs({
       args: args.slice(2),
@@ -635,8 +609,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "delete") {
     const fileId = args[1];
     if (!fileId) {
-      console.error("Error: Missing file ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
     }
     await driveService.delete(email, fileId);
     console.log("Deleted");
@@ -647,8 +620,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
     const fileId = args[1];
     const newParentId = args[2];
     if (!fileId || !newParentId) {
-      console.error("Error: Missing file ID or new parent ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID or new parent ID");
     }
     const file = await driveService.move(email, fileId, newParentId);
     console.log(`Moved: ${file.name}`);
@@ -659,8 +631,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
     const fileId = args[1];
     const newName = args[2];
     if (!fileId || !newName) {
-      console.error("Error: Missing file ID or new name");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID or new name");
     }
     const file = await driveService.rename(email, fileId, newName);
     console.log(`Renamed: ${file.name}`);
@@ -670,8 +641,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "share") {
     const fileId = args[1];
     if (!fileId) {
-      console.error("Error: Missing file ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
     }
     const { values } = parseArgs({
       args: args.slice(2),
@@ -696,8 +666,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
     const fileId = args[1];
     const permissionId = args[2];
     if (!fileId || !permissionId) {
-      console.error("Error: Missing file ID or permission ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID or permission ID");
     }
     await driveService.unshare(email, fileId, permissionId);
     console.log("Permission removed");
@@ -707,8 +676,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "permissions") {
     const fileId = args[1];
     if (!fileId) {
-      console.error("Error: Missing file ID");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
     }
     const permissions = await driveService.listPermissions(email, fileId);
     console.log("ID\tTYPE\tROLE\tEMAIL");
@@ -721,8 +689,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   if (command === "url") {
     const fileIds = args.slice(1);
     if (fileIds.length === 0) {
-      console.error("Error: Missing file IDs");
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, "Missing file IDs");
     }
     for (const id of fileIds) {
       console.log(driveService.getFileUrl(id));
@@ -730,8 +697,7 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
     return;
   }
 
-  console.error(`Error: Unknown drive command: ${command}`);
-  process.exit(1);
+  exitWithCode(ExitCode.INVALID_INPUT, `Unknown drive command: ${command}`);
 }
 
 async function main(): Promise<void> {
@@ -755,13 +721,11 @@ async function main(): Promise<void> {
     const serviceArgs = args.slice(2);
 
     if (!email.includes("@")) {
-      console.error(`Error: Invalid email address: ${email}`);
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, `Invalid email address: ${email}`);
     }
 
     if (!accountStorage.hasAccount(email)) {
-      console.error(`Error: Account '${email}' not found. Run: jgoogle accounts add ${email}`);
-      process.exit(1);
+      exitWithCode(ExitCode.NOT_FOUND, `Account '${email}' not found. Run: jgoogle accounts add ${email}`);
     }
 
     if (service === "mail") {
@@ -771,12 +735,11 @@ async function main(): Promise<void> {
     } else if (service === "drive") {
       await handleDrive(email, serviceArgs);
     } else {
-      console.error(`Error: Unknown service: ${service}. Use: mail, cal, or drive`);
-      process.exit(1);
+      exitWithCode(ExitCode.INVALID_INPUT, `Unknown service: ${service}. Use: mail, cal, or drive`);
     }
   } catch (e) {
-    console.error(`Error: ${e instanceof Error ? e.message : e}`);
-    process.exit(1);
+    const msg = e instanceof Error ? e.message : String(e);
+    exitWithCode(ExitCode.API_ERROR, msg);
   }
 }
 
