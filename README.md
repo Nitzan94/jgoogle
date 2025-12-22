@@ -92,6 +92,17 @@ jgoogle <email> drive url <fileIds...>            # Generate URLs
 
 - Node.js >= 18
 
+## Exit Codes (for LLM/Agents)
+
+| Code | Meaning | Solution |
+|------|---------|----------|
+| 0 | Success | - |
+| 1 | Auth error (token expired) | Run `jgoogle accounts add <email>` |
+| 2 | Network error | Check internet connection |
+| 3 | Not found (email/file/event) | Check ID/query |
+| 4 | Invalid input | Check `jgoogle --help` |
+| 5 | API error (quota/permissions) | Check Google Cloud Console |
+
 ## License
 
 MIT
