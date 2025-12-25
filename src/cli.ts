@@ -2,6 +2,9 @@
 // ABOUTME: Main CLI entry point for jgoogle
 // ABOUTME: Routes commands to Gmail, Calendar, and Drive services
 
+import * as fs from "fs";
+import * as path from "path";
+import * as os from "os";
 import { parseArgs } from "util";
 import { AccountStorage } from "./account-storage.js";
 import { OAuthFlow } from "./oauth-flow.js";
@@ -61,13 +64,6 @@ DRIVE COMMANDS (jgoogle <email> drive ...)
   search <query> [--max N]                 Search files
   get <fileId>                             Get file metadata
   download <fileId> [destPath]             Download file
-  upload <localPath> [--name N] [--folder F]  Upload file
-  mkdir <name> [--parent F]                Create folder
-  delete <fileId>                          Delete file
-  move <fileId> <newParentId>              Move file
-  rename <fileId> <newName>                Rename file
-  share <fileId> [--anyone] [--email E]    Share file
-  unshare <fileId> <permissionId>          Remove permission
   permissions <fileId>                     List permissions
   url <fileIds...>                         Generate Drive URLs
 
@@ -569,110 +565,6 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
     return;
   }
 
-  if (command === "upload") {
-    const localPath = args[1];
-    if (!localPath) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing local file path");
-    }
-    const { values } = parseArgs({
-      args: args.slice(2),
-      options: { name: { type: "string" }, folder: { type: "string" } },
-      allowPositionals: true,
-    });
-    const file = await driveService.upload(email, localPath, {
-      name: values.name,
-      folderId: values.folder,
-    });
-    console.log(`Uploaded: ${file.id}`);
-    console.log(`Name: ${file.name}`);
-    if (file.webViewLink) console.log(`Link: ${file.webViewLink}`);
-    return;
-  }
-
-  if (command === "mkdir") {
-    const name = args[1];
-    if (!name) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing folder name");
-    }
-    const { values } = parseArgs({
-      args: args.slice(2),
-      options: { parent: { type: "string" } },
-      allowPositionals: true,
-    });
-    const folder = await driveService.mkdir(email, name, values.parent);
-    console.log(`Created: ${folder.id}`);
-    console.log(`Name: ${folder.name}`);
-    if (folder.webViewLink) console.log(`Link: ${folder.webViewLink}`);
-    return;
-  }
-
-  if (command === "delete") {
-    const fileId = args[1];
-    if (!fileId) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
-    }
-    await driveService.delete(email, fileId);
-    console.log("Deleted");
-    return;
-  }
-
-  if (command === "move") {
-    const fileId = args[1];
-    const newParentId = args[2];
-    if (!fileId || !newParentId) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID or new parent ID");
-    }
-    const file = await driveService.move(email, fileId, newParentId);
-    console.log(`Moved: ${file.name}`);
-    return;
-  }
-
-  if (command === "rename") {
-    const fileId = args[1];
-    const newName = args[2];
-    if (!fileId || !newName) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID or new name");
-    }
-    const file = await driveService.rename(email, fileId, newName);
-    console.log(`Renamed: ${file.name}`);
-    return;
-  }
-
-  if (command === "share") {
-    const fileId = args[1];
-    if (!fileId) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID");
-    }
-    const { values } = parseArgs({
-      args: args.slice(2),
-      options: {
-        anyone: { type: "boolean" },
-        email: { type: "string" },
-        role: { type: "string" },
-      },
-      allowPositionals: true,
-    });
-    const result = await driveService.share(email, fileId, {
-      anyone: values.anyone,
-      email: values.email,
-      role: values.role as "reader" | "writer",
-    });
-    console.log(`Link: ${result.link}`);
-    console.log(`Permission ID: ${result.permissionId}`);
-    return;
-  }
-
-  if (command === "unshare") {
-    const fileId = args[1];
-    const permissionId = args[2];
-    if (!fileId || !permissionId) {
-      exitWithCode(ExitCode.INVALID_INPUT, "Missing file ID or permission ID");
-    }
-    await driveService.unshare(email, fileId, permissionId);
-    console.log("Permission removed");
-    return;
-  }
-
   if (command === "permissions") {
     const fileId = args[1];
     if (!fileId) {
@@ -700,7 +592,28 @@ async function handleDrive(email: string, args: string[]): Promise<void> {
   exitWithCode(ExitCode.INVALID_INPUT, `Unknown drive command: ${command}`);
 }
 
+const JGOOGLE_DIR = path.join(os.homedir(), ".jgoogle");
+
+function ensureReadme(): void {
+  try {
+    const readmeDest = path.join(JGOOGLE_DIR, "README.md");
+    if (fs.existsSync(readmeDest)) return;
+
+    if (!fs.existsSync(JGOOGLE_DIR)) {
+      fs.mkdirSync(JGOOGLE_DIR, { recursive: true });
+    }
+
+    const packageRoot = path.resolve(__dirname, "..");
+    const readmeSrc = path.join(packageRoot, "README.md");
+
+    if (fs.existsSync(readmeSrc)) {
+      fs.copyFileSync(readmeSrc, readmeDest);
+    }
+  } catch { /* ignore */ }
+}
+
 async function main(): Promise<void> {
+  ensureReadme();
   const args = process.argv.slice(2);
 
   if (args.length === 0 || args[0] === "--help" || args[0] === "-h") {

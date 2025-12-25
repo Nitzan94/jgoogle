@@ -43,6 +43,7 @@ jgoogle <email> mail thread <threadId>            # Get full thread
 jgoogle <email> mail labels list                  # List labels
 jgoogle <email> mail send --to <e> --subject <s> --body <b>  # Send email
 jgoogle <email> mail drafts list                  # List drafts
+jgoogle <email> mail drafts send <draftId>        # Send draft
 jgoogle <email> mail url <threadIds...>           # Generate Gmail URLs
 ```
 
@@ -52,9 +53,6 @@ jgoogle <email> mail url <threadIds...>           # Generate Gmail URLs
 jgoogle <email> cal calendars                     # List calendars
 jgoogle <email> cal events [calendarId] [--max N] # List events
 jgoogle <email> cal event <calendarId> <eventId>  # Get event details
-jgoogle <email> cal create <calId> --title <t> --start <s> --end <e>
-jgoogle <email> cal update <calId> <eventId> [--title] [--start] [--end]
-jgoogle <email> cal delete <calId> <eventId>      # Delete event
 jgoogle <email> cal freebusy <calIds> --start <s> --end <e>
 ```
 
@@ -65,11 +63,6 @@ jgoogle <email> drive ls [folderId] [--max N]     # List files
 jgoogle <email> drive search <query> [--max N]    # Search files
 jgoogle <email> drive get <fileId>                # Get metadata
 jgoogle <email> drive download <fileId> [dest]    # Download file
-jgoogle <email> drive upload <path> [--name N] [--folder F]
-jgoogle <email> drive mkdir <name> [--parent F]   # Create folder
-jgoogle <email> drive delete <fileId>             # Delete file
-jgoogle <email> drive move <fileId> <newParent>   # Move file
-jgoogle <email> drive share <fileId> [--anyone] [--email E]
 jgoogle <email> drive permissions <fileId>        # List permissions
 jgoogle <email> drive url <fileIds...>            # Generate URLs
 ```
@@ -84,9 +77,9 @@ jgoogle <email> drive url <fileIds...>            # Generate URLs
 
 ## OAuth Scopes
 
-- Gmail: read, send, modify, labels
-- Calendar: read, write events
-- Drive: read, write files
+- Gmail: read, compose (send)
+- Calendar: read only
+- Drive: read only
 
 ## Requirements
 

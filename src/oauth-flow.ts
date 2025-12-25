@@ -178,22 +178,17 @@ export class OAuthFlow {
     }
   }
 
-  private openBrowser(url: string): void {
-    let cmd: string;
-    let args: string[];
-
+  private openBrowser(authUrl: string): void {
     if (process.platform === "darwin") {
-      cmd = "open";
-      args = [url];
+      spawn("open", [authUrl], { detached: true, stdio: "ignore" }).unref();
     } else if (process.platform === "win32") {
-      // Use cmd /c start with empty title - more reliable for complex URLs
-      cmd = "cmd";
-      args = ["/c", "start", "", url];
+      // Windows: PowerShell handles URLs with special characters better
+      spawn("powershell", ["-Command", `Start-Process "${authUrl}"`], {
+        detached: true,
+        stdio: "ignore",
+      }).unref();
     } else {
-      cmd = "xdg-open";
-      args = [url];
+      spawn("xdg-open", [authUrl], { detached: true, stdio: "ignore" }).unref();
     }
-
-    spawn(cmd, args, { detached: true, stdio: "ignore" }).unref();
   }
 }
