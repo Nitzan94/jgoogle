@@ -29,6 +29,7 @@
   "author": "Nitzan Bar-Ness",
   "license": "MIT",
   "dependencies": {
+    "dotenv": "^17.2.3",
     "google-auth-library": "^9.15.1",
     "googleapis": "^144.0.0"
   },

@@ -8,11 +8,11 @@ import * as path from "path";
 const CONFIG_DIR = path.join(os.homedir(), ".jgoogle");
 const ACCOUNTS_FILE = path.join(CONFIG_DIR, "accounts.json");
 
-// Embedded OAuth credentials (Desktop app) - users don't need to configure their own
+// OAuth credentials from environment (embedded at build time)
 // Project: joseph-481914
 const EMBEDDED_CREDENTIALS = {
-  clientId: "REDACTED_CLIENT_ID",
-  clientSecret: "REDACTED_CLIENT_SECRET"
+  clientId: process.env['GOOGLE_CLIENT_ID'] || "",
+  clientSecret: process.env['GOOGLE_CLIENT_SECRET'] || ""
 };
 
 export interface OAuth2Credentials {

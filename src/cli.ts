@@ -2,6 +2,9 @@
 // ABOUTME: Main CLI entry point for jgoogle
 // ABOUTME: Routes commands to Gmail, Calendar, and Drive services
 
+import * as dotenv from "dotenv";
+dotenv.config(); // Load .env for local dev (credentials embedded at compile time)
+
 import * as fs from "fs";
 import * as path from "path";
 import * as os from "os";
